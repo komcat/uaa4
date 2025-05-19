@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
-#include "MenuSystem.h" // Include the new header file
+#include <iostream>
+#include "MenuSystem.h"
 
 int main()
 {
@@ -18,7 +19,7 @@ int main()
   }
 
   // Window size vector for convenience
-  sf::Vector2f windowSize(window.getSize());
+  sf::Vector2f windowSize(static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y));
 
   // Create screens
   MenuScreen menuScreen(font, windowSize);
@@ -62,32 +63,50 @@ int main()
 
         activeScreen = newScreen;
       }
+      else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left)
+      {
+        // Handle mouse release for sliders
+        if (activeScreen == Screen::TEST) {
+          testScreen.handleMouseRelease();
+        }
+      }
+      else if (event.type == sf::Event::MouseMoved)
+      {
+        // Update UI hover effects when the mouse moves
+        sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
+
+        // Update the current screen for hover effects
+        switch (activeScreen) {
+        case Screen::MENU:
+          menuScreen.update(mousePos);
+          break;
+        case Screen::RUN:
+          runScreen.update(mousePos);
+          break;
+        case Screen::MANUAL:
+          manualScreen.update(mousePos);
+          break;
+        case Screen::TEST:
+          testScreen.update(mousePos);
+
+          // Specifically handle slider dragging in the test screen
+          if (activeScreen == Screen::TEST) {
+            // If we're dragging a slider, update its position with the mouse
+            sf::Vector2f mousePos(static_cast<float>(event.mouseMove.x), static_cast<float>(event.mouseMove.y));
+            testScreen.handleMouseDrag(mousePos);
+          }
+          break;
+        }
+      }
       else if (event.type == sf::Event::Resized)
       {
         // Adjust the viewport when the window is resized
         sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
         window.setView(sf::View(visibleArea));
+
+        // You might want to update your UI components' positions here if needed
+        // For example: menuScreen.updatePositions(sf::Vector2f(event.size.width, event.size.height));
       }
-    }
-
-    // Get current mouse position for hover effects
-    sf::Vector2f mousePos(static_cast<float>(sf::Mouse::getPosition(window).x),
-      static_cast<float>(sf::Mouse::getPosition(window).y));
-
-    // Update the current screen (for hover effects)
-    switch (activeScreen) {
-    case Screen::MENU:
-      menuScreen.update(mousePos);
-      break;
-    case Screen::RUN:
-      runScreen.update(mousePos);
-      break;
-    case Screen::MANUAL:
-      manualScreen.update(mousePos);
-      break;
-    case Screen::TEST:
-      testScreen.update(mousePos);
-      break;
     }
 
     // Clear the window

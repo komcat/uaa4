@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <functional>
 
 // Enum to track which screen we're on
 enum class Screen {
@@ -22,59 +23,94 @@ private:
   bool isHovered;
 
 public:
-  Button(const sf::Font& font, const std::string& buttonText, const sf::Vector2f& position, const sf::Vector2f& size) {
-    // Set up the button shape
-    shape.setSize(size);
-    shape.setPosition(position);
-    shape.setFillColor(sf::Color(50, 150, 50));
-    shape.setOutlineThickness(2);
-    shape.setOutlineColor(sf::Color(20, 100, 20));
+  Button(const sf::Font& font, const std::string& buttonText, const sf::Vector2f& position, const sf::Vector2f& size);
+  bool isMouseOver(const sf::Vector2f& mousePos) const;
+  void update(const sf::Vector2f& mousePos);
+  bool isClicked(const sf::Vector2f& mousePos) const;
+  void draw(sf::RenderWindow& window) const;
+};
 
-    // Set up the text
-    text.setFont(font);
-    text.setString(buttonText);
-    text.setCharacterSize(24);
-    text.setFillColor(sf::Color::White);
+// Checkbox component
+class Checkbox {
+private:
+  sf::RectangleShape box;
+  sf::RectangleShape checkmark;
+  sf::Text label;
+  bool checked;
+  bool isHovered;
+  std::function<void(bool)> onChange;
 
-    // Center text on button
-    sf::FloatRect textBounds = text.getLocalBounds();
-    text.setPosition(
-      position.x + (size.x - textBounds.width) / 2.0f,
-      position.y + (size.y - textBounds.height) / 2.0f - textBounds.top
-    );
+public:
+  Checkbox(const sf::Font& font, const std::string& labelText, const sf::Vector2f& position, bool initialState = false);
+  void setOnChange(std::function<void(bool)> callback);
+  bool isChecked() const;
+  void setChecked(bool state);
+  bool isMouseOver(const sf::Vector2f& mousePos) const;
+  void update(const sf::Vector2f& mousePos);
+  void toggle();
+  bool handleClick(const sf::Vector2f& mousePos);
+  void draw(sf::RenderWindow& window) const;
+};
 
-    isHovered = false;
-  }
+// Slider component
+class Slider {
+private:
+  sf::RectangleShape track;
+  sf::RectangleShape handle;
+  sf::Text label;
+  sf::Text valueText;
+  float minValue;
+  float maxValue;
+  float currentValue;
+  bool isDragging;
+  std::function<void(float)> onChange;
 
-  // Check if the mouse is over the button
-  bool isMouseOver(const sf::Vector2f& mousePos) const {
-    return shape.getGlobalBounds().contains(mousePos);
-  }
+public:
+  Slider(const sf::Font& font, const std::string& labelText, const sf::Vector2f& position,
+    float width, float minVal, float maxVal, float initialValue);
+  void setOnChange(std::function<void(float)> callback);
+  float getValue() const;
+  void setValue(float value);
+  void updateHandlePosition();
+  void updateValueText();
+  bool isHandleMouseOver(const sf::Vector2f& mousePos) const;
+  bool isTrackMouseOver(const sf::Vector2f& mousePos) const;
+  void startDrag();
+  void stopDrag();
+  void updateFromMousePosition(const sf::Vector2f& mousePos);
+  bool handleClick(const sf::Vector2f& mousePos);
+  void handleRelease();
+  void draw(sf::RenderWindow& window) const;
+};
 
-  // Update button appearance when hovered
-  void update(const sf::Vector2f& mousePos) {
-    bool hover = isMouseOver(mousePos);
 
-    if (hover && !isHovered) {
-      shape.setFillColor(sf::Color(70, 170, 70));
-      isHovered = true;
-    }
-    else if (!hover && isHovered) {
-      shape.setFillColor(sf::Color(50, 150, 50));
-      isHovered = false;
-    }
-  }
+// Dropdown component
+class Dropdown {
+private:
+  sf::RectangleShape mainBox;
+  sf::Text selectedText;
+  sf::RectangleShape dropdownList;
+  std::vector<sf::Text> options;
+  std::vector<sf::RectangleShape> optionBackgrounds;
+  bool isOpen;
+  bool isHovered;
+  int selectedIndex;
+  std::function<void(int, const std::string&)> onChange;
 
-  // Check if button is clicked
-  bool isClicked(const sf::Vector2f& mousePos) const {
-    return isMouseOver(mousePos);
-  }
-
-  // Draw the button
-  void draw(sf::RenderWindow& window) const {
-    window.draw(shape);
-    window.draw(text);
-  }
+public:
+  Dropdown(const sf::Font& font, const std::vector<std::string>& items,
+    const sf::Vector2f& position, float width);
+  void setOnChange(std::function<void(int, const std::string&)> callback);
+  int getSelectedIndex() const;
+  std::string getSelectedText() const;
+  void setSelectedIndex(int index);
+  bool isMainBoxMouseOver(const sf::Vector2f& mousePos) const;
+  bool isDropdownListMouseOver(const sf::Vector2f& mousePos) const;
+  int getOptionIndexAtPosition(const sf::Vector2f& mousePos) const;
+  void update(const sf::Vector2f& mousePos);
+  void toggle();
+  bool handleClick(const sf::Vector2f& mousePos);
+  void draw(sf::RenderWindow& window) const;
 };
 
 // Base Screen class
@@ -85,85 +121,17 @@ protected:
   sf::Text headerText;
 
 public:
-  BaseScreen(const sf::Font& font) : font(font) {}
-
-  virtual void update(const sf::Vector2f& mousePos) {
-    for (auto& button : buttons) {
-      button.update(mousePos);
-    }
-  }
-
-  virtual void draw(sf::RenderWindow& window) {
-    for (const auto& button : buttons) {
-      button.draw(window);
-    }
-    window.draw(headerText);
-  }
-
+  BaseScreen(const sf::Font& font);
+  virtual void update(const sf::Vector2f& mousePos);
+  virtual void draw(sf::RenderWindow& window);
   virtual Screen handleClick(const sf::Vector2f& mousePos) = 0;
 };
 
 // Menu Screen
 class MenuScreen : public BaseScreen {
 public:
-  MenuScreen(const sf::Font& font, const sf::Vector2f& windowSize) : BaseScreen(font) {
-    // Set up header text
-    headerText.setFont(font);
-    headerText.setString("MAIN MENU");
-    headerText.setCharacterSize(36);
-    headerText.setFillColor(sf::Color::White);
-
-    // Center the header text
-    sf::FloatRect textBounds = headerText.getLocalBounds();
-    headerText.setPosition(
-      (windowSize.x - textBounds.width) / 2.0f,
-      50.0f
-    );
-
-    // Create menu buttons
-    float buttonWidth = 200.0f;
-    float buttonHeight = 50.0f;
-    float startY = 150.0f;
-    float spacing = 70.0f;
-
-    // Add Run button
-    buttons.emplace_back(font, "Run",
-      sf::Vector2f((windowSize.x - buttonWidth) / 2.0f, startY),
-      sf::Vector2f(buttonWidth, buttonHeight));
-
-    // Add Manual button
-    buttons.emplace_back(font, "Manual",
-      sf::Vector2f((windowSize.x - buttonWidth) / 2.0f, startY + spacing),
-      sf::Vector2f(buttonWidth, buttonHeight));
-
-    // Add Test button
-    buttons.emplace_back(font, "Test",
-      sf::Vector2f((windowSize.x - buttonWidth) / 2.0f, startY + spacing * 2),
-      sf::Vector2f(buttonWidth, buttonHeight));
-
-    // Add Exit button
-    buttons.emplace_back(font, "Exit",
-      sf::Vector2f((windowSize.x - buttonWidth) / 2.0f, startY + spacing * 3),
-      sf::Vector2f(buttonWidth, buttonHeight));
-  }
-
-  Screen handleClick(const sf::Vector2f& mousePos) override {
-    if (buttons[0].isClicked(mousePos)) {
-      return Screen::RUN;
-    }
-    else if (buttons[1].isClicked(mousePos)) {
-      return Screen::MANUAL;
-    }
-    else if (buttons[2].isClicked(mousePos)) {
-      return Screen::TEST;
-    }
-    else if (buttons[3].isClicked(mousePos)) {
-      // Exit button clicked
-      std::exit(0);
-    }
-
-    return Screen::MENU;
-  }
+  MenuScreen(const sf::Font& font, const sf::Vector2f& windowSize);
+  Screen handleClick(const sf::Vector2f& mousePos) override;
 };
 
 // Content Screen base class (for Run, Manual, Test screens)
@@ -172,73 +140,38 @@ protected:
   sf::Text contentText;
 
 public:
-  ContentScreen(const sf::Font& font, const std::string& title, const std::string& content, const sf::Vector2f& windowSize)
-    : BaseScreen(font) {
-    // Set up header text
-    headerText.setFont(font);
-    headerText.setString(title);
-    headerText.setCharacterSize(36);
-    headerText.setFillColor(sf::Color::White);
-
-    // Position header text (centered horizontally)
-    sf::FloatRect textBounds = headerText.getLocalBounds();
-    headerText.setPosition(
-      (windowSize.x - textBounds.width) / 2.0f,
-      50.0f
-    );
-
-    // Set up content text
-    contentText.setFont(font);
-    contentText.setString(content);
-    contentText.setCharacterSize(24);
-    contentText.setFillColor(sf::Color::White);
-    contentText.setPosition(50.0f, 150.0f);
-
-    // Back button
-    buttons.emplace_back(font, "Back", sf::Vector2f(20.0f, 20.0f), sf::Vector2f(100.0f, 40.0f));
-  }
-
-  void draw(sf::RenderWindow& window) override {
-    BaseScreen::draw(window);
-    window.draw(contentText);
-  }
-
-  Screen handleClick(const sf::Vector2f& mousePos) override {
-    if (buttons[0].isClicked(mousePos)) {
-      return Screen::MENU;
-    }
-    return Screen::MENU; // Fallback
-  }
+  ContentScreen(const sf::Font& font, const std::string& title, const std::string& content, const sf::Vector2f& windowSize);
+  void draw(sf::RenderWindow& window) override;
+  Screen handleClick(const sf::Vector2f& mousePos) override;
 };
 
 // Run Screen
 class RunScreen : public ContentScreen {
 public:
-  RunScreen(const sf::Font& font, const sf::Vector2f& windowSize)
-    : ContentScreen(font, "RUN SCREEN",
-      "This is the Run screen.\n\nHere you can start your application or simulation.",
-      windowSize) {
-  }
+  RunScreen(const sf::Font& font, const sf::Vector2f& windowSize);
 };
 
 // Manual Screen
 class ManualScreen : public ContentScreen {
 public:
-  ManualScreen(const sf::Font& font, const sf::Vector2f& windowSize)
-    : ContentScreen(font, "MANUAL SCREEN",
-      "This is the Manual screen.\n\nHere you can add instructions or documentation for your application.",
-      windowSize) {
-  }
+  ManualScreen(const sf::Font& font, const sf::Vector2f& windowSize);
 };
 
 // Test Screen
 class TestScreen : public ContentScreen {
+private:
+  Checkbox checkbox1;
+  Checkbox checkbox2;
+  Slider slider;
+  Dropdown dropdown;
+
 public:
-  TestScreen(const sf::Font& font, const sf::Vector2f& windowSize)
-    : ContentScreen(font, "TEST SCREEN",
-      "This is the Test screen.\n\nHere you can add test features or debugging tools for your application.",
-      windowSize) {
-  }
+  TestScreen(const sf::Font& font, const sf::Vector2f& windowSize);
+  void update(const sf::Vector2f& mousePos) override;
+  void draw(sf::RenderWindow& window) override;
+  Screen handleClick(const sf::Vector2f& mousePos) override;
+  void handleMouseRelease();
+  void handleMouseDrag(const sf::Vector2f& mousePos);
 };
 
 #endif // MENU_SYSTEM_H
