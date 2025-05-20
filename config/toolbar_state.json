@@ -1,0 +1,29 @@
+{
+  "windows": {
+    "Config Editor": false,
+    "Data": false,
+    "Data Chart": true,
+    "Data TCP/IP": true,
+    "Gantry": false,
+    "General": false,
+    "Global Jog Panel": true,
+    "Graph Visualizer": false,
+    "IO Control": false,
+    "IO Quick Control": true,
+    "Laser TEC Cntrl": true,
+    "Manual": false,
+    "Motion Control": false,
+    "Motion Graphic": false,
+    "Motors": false,
+    "PI": false,
+    "Pneumatic": true,
+    "Process Control": true,
+    "Products": false,
+    "Products Config": true,
+    "Scanning Optimizer": true,
+    "Script Editor": false,
+    "Script Output": false,
+    "Script Runner": true,
+    "Top Camera": true
+  }
+}

@@ -38,6 +38,7 @@ add_subdirectory(thirdparty/SFML-2.6.1)
 add_subdirectory(thirdparty/imgui-docking)
 add_subdirectory(thirdparty/imgui-sfml-2.6.x)
 add_subdirectory(thirdparty/glad)
+add_subdirectory(thirdparty/nlohmann_json)
 
 
 # MY_SOURCES is defined to be a list of all the source files for my game 
@@ -93,4 +94,5 @@ target_link_libraries("${CMAKE_PROJECT_NAME}"
 	imgui
 	ImGui-SFML::ImGui-SFML
 	glad
+	nlohmann_json::nlohmann_json
 )
